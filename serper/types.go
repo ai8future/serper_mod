@@ -160,15 +160,16 @@ func (r *SearchRequest) SetDefaults() {
 }
 
 // Validate checks that the SearchRequest is valid.
+// Call SetDefaults before Validate if you want zero-value fields filled in.
 func (r *SearchRequest) Validate() error {
 	if r.Q == "" {
 		return fmt.Errorf("query (q) is required")
 	}
-	if r.Num < 0 || r.Num > 100 {
+	if r.Num < 1 || r.Num > 100 {
 		return fmt.Errorf("num must be between 1 and 100")
 	}
-	if r.Page < 0 {
-		return fmt.Errorf("page must be non-negative")
+	if r.Page < 1 {
+		return fmt.Errorf("page must be 1 or greater")
 	}
 	return nil
 }

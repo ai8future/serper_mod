@@ -26,6 +26,8 @@ venv/
 *.exe
 *.test
 .gocache/
+go.work
+go.work.sum
 
 # Node
 node_modules/

@@ -7,9 +7,15 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
 )
 
-const defaultBaseURL = "https://google.serper.dev"
+const (
+	defaultBaseURL    = "https://google.serper.dev"
+	defaultTimeout    = 30 * time.Second
+	maxResponseBytes  = 10 * 1024 * 1024 // 10 MB
+	maxErrorBodyBytes = 1024             // truncate error bodies in messages
+)
 
 // Doer executes HTTP requests. Satisfied by *http.Client, call.Client, and test mocks.
 type Doer interface {
@@ -41,7 +47,7 @@ func New(apiKey string, opts ...Option) *Client {
 	c := &Client{
 		apiKey:  apiKey,
 		baseURL: defaultBaseURL,
-		doer:    http.DefaultClient,
+		doer:    &http.Client{Timeout: defaultTimeout},
 	}
 	for _, o := range opts {
 		o(c)
@@ -69,8 +75,17 @@ func (c *Client) getAPIKey(ctx context.Context) string {
 	return c.apiKey
 }
 
+// prepareRequest applies defaults and validates the search request.
+func prepareRequest(req *SearchRequest) error {
+	req.SetDefaults()
+	return req.Validate()
+}
+
 // Search performs a web search via Serper.dev.
 func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
+	if err := prepareRequest(req); err != nil {
+		return nil, err
+	}
 	var resp SearchResponse
 	if err := c.doRequest(ctx, "/search", req, &resp); err != nil {
 		return nil, err
@@ -80,6 +95,9 @@ func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchRespons
 
 // Images performs an image search via Serper.dev.
 func (c *Client) Images(ctx context.Context, req *SearchRequest) (*ImagesResponse, error) {
+	if err := prepareRequest(req); err != nil {
+		return nil, err
+	}
 	var resp ImagesResponse
 	if err := c.doRequest(ctx, "/images", req, &resp); err != nil {
 		return nil, err
@@ -89,6 +107,9 @@ func (c *Client) Images(ctx context.Context, req *SearchRequest) (*ImagesRespons
 
 // News performs a news search via Serper.dev.
 func (c *Client) News(ctx context.Context, req *SearchRequest) (*NewsResponse, error) {
+	if err := prepareRequest(req); err != nil {
+		return nil, err
+	}
 	var resp NewsResponse
 	if err := c.doRequest(ctx, "/news", req, &resp); err != nil {
 		return nil, err
@@ -98,6 +119,9 @@ func (c *Client) News(ctx context.Context, req *SearchRequest) (*NewsResponse, e
 
 // Places performs a places search via Serper.dev.
 func (c *Client) Places(ctx context.Context, req *SearchRequest) (*PlacesResponse, error) {
+	if err := prepareRequest(req); err != nil {
+		return nil, err
+	}
 	var resp PlacesResponse
 	if err := c.doRequest(ctx, "/places", req, &resp); err != nil {
 		return nil, err
@@ -107,6 +131,9 @@ func (c *Client) Places(ctx context.Context, req *SearchRequest) (*PlacesRespons
 
 // Scholar performs a scholar search via Serper.dev.
 func (c *Client) Scholar(ctx context.Context, req *SearchRequest) (*ScholarResponse, error) {
+	if err := prepareRequest(req); err != nil {
+		return nil, err
+	}
 	var resp ScholarResponse
 	if err := c.doRequest(ctx, "/scholar", req, &resp); err != nil {
 		return nil, err
@@ -122,7 +149,7 @@ func (c *Client) CheckConnectivity(ctx context.Context) error {
 }
 
 // doRequest performs an HTTP request to the Serper.dev API.
-func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody interface{}, respBody interface{}) error {
+func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody, respBody any) error {
 	jsonBody, err := json.Marshal(reqBody)
 	if err != nil {
 		return fmt.Errorf("serper: marshal request: %w", err)
@@ -147,13 +174,17 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody interfa
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(resp.Body)
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
 	if err != nil {
 		return fmt.Errorf("serper: read response: %w", err)
 	}
 
 	if resp.StatusCode >= 400 {
-		return fmt.Errorf("serper: HTTP %d: %s", resp.StatusCode, body)
+		msg := string(body)
+		if len(msg) > maxErrorBodyBytes {
+			msg = msg[:maxErrorBodyBytes] + "...(truncated)"
+		}
+		return fmt.Errorf("serper: HTTP %d: %s", resp.StatusCode, msg)
 	}
 
 	if err := json.Unmarshal(body, respBody); err != nil {

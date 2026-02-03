@@ -44,8 +44,12 @@ func TestNew_Defaults(t *testing.T) {
 	if c.doer == nil {
 		t.Error("doer should not be nil")
 	}
-	if c.doer != http.DefaultClient {
-		t.Error("doer should default to http.DefaultClient")
+	httpClient, ok := c.doer.(*http.Client)
+	if !ok {
+		t.Fatal("doer should be an *http.Client")
+	}
+	if httpClient.Timeout != defaultTimeout {
+		t.Errorf("timeout: got %v, want %v", httpClient.Timeout, defaultTimeout)
 	}
 }
 
@@ -242,6 +246,47 @@ func TestGetBody_RetrySupport(t *testing.T) {
 	}
 }
 
+func TestSearch_ValidationError(t *testing.T) {
+	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
+	c := New("key", WithDoer(mock))
+
+	_, err := c.Search(context.Background(), &SearchRequest{Q: ""})
+	if err == nil {
+		t.Fatal("expected validation error for empty query")
+	}
+	if !strings.Contains(err.Error(), "query") {
+		t.Errorf("error should mention 'query', got: %v", err)
+	}
+	if mock.req != nil {
+		t.Error("no HTTP request should have been made for invalid input")
+	}
+}
+
+func TestSearch_AppliesDefaults(t *testing.T) {
+	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
+	c := New("key", WithDoer(mock))
+
+	// Pass only Q; Num/GL/HL/Page should get defaults from prepareRequest.
+	_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	var sent SearchRequest
+	if err := json.Unmarshal(mock.body, &sent); err != nil {
+		t.Fatalf("unmarshal request body: %v", err)
+	}
+	if sent.Num != 10 {
+		t.Errorf("Num: got %d, want 10", sent.Num)
+	}
+	if sent.GL != "us" {
+		t.Errorf("GL: got %q, want %q", sent.GL, "us")
+	}
+	if sent.Page != 1 {
+		t.Errorf("Page: got %d, want 1", sent.Page)
+	}
+}
+
 func TestSearchRequest_SetDefaults(t *testing.T) {
 	r := &SearchRequest{Q: "test"}
 	r.SetDefaults()
@@ -274,15 +319,27 @@ func TestSearchRequest_Validate(t *testing.T) {
 		},
 		{
 			name:    "empty query",
-			req:     SearchRequest{Q: "", Num: 10},
+			req:     SearchRequest{Q: "", Num: 10, Page: 1},
 			wantErr: true,
 			errMsg:  "query",
 		},
 		{
-			name:    "num too high",
-			req:     SearchRequest{Q: "test", Num: 200},
+			name:    "num zero",
+			req:     SearchRequest{Q: "test", Num: 0, Page: 1},
 			wantErr: true,
 			errMsg:  "num",
+		},
+		{
+			name:    "num too high",
+			req:     SearchRequest{Q: "test", Num: 200, Page: 1},
+			wantErr: true,
+			errMsg:  "num",
+		},
+		{
+			name:    "page zero",
+			req:     SearchRequest{Q: "test", Num: 10, Page: 0},
+			wantErr: true,
+			errMsg:  "page",
 		},
 		{
 			name:    "negative page",

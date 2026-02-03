@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ai8future/chassis-go/call"
@@ -34,7 +35,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "usage: serper <query>")
 		os.Exit(1)
 	}
-	query := os.Args[1]
+	query := strings.Join(os.Args[1:], " ")
 
 	caller := call.New(
 		call.WithTimeout(cfg.Timeout),
