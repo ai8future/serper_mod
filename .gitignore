@@ -1,0 +1,7 @@
+/cmd/serper/serper
+*.exe
+*.test
+.env
+.idea/
+.vscode/
+*.swp
