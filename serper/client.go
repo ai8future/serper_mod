@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"time"
 )
 
@@ -43,7 +44,11 @@ func WithDoer(d Doer) Option {
 }
 
 // New creates a Serper client with the given API key and options.
-func New(apiKey string, opts ...Option) *Client {
+// Returns an error if the API key is empty or the base URL is invalid.
+func New(apiKey string, opts ...Option) (*Client, error) {
+	if apiKey == "" {
+		return nil, fmt.Errorf("serper: API key must not be empty")
+	}
 	c := &Client{
 		apiKey:  apiKey,
 		baseURL: defaultBaseURL,
@@ -52,7 +57,10 @@ func New(apiKey string, opts ...Option) *Client {
 	for _, o := range opts {
 		o(c)
 	}
-	return c
+	if _, err := url.ParseRequestURI(c.baseURL); err != nil {
+		return nil, fmt.Errorf("serper: invalid base URL %q: %w", c.baseURL, err)
+	}
+	return c, nil
 }
 
 // apiKeyContextKey is the context key for API key overrides.
@@ -75,19 +83,25 @@ func (c *Client) getAPIKey(ctx context.Context) string {
 	return c.apiKey
 }
 
-// prepareRequest applies defaults and validates the search request.
-func prepareRequest(req *SearchRequest) error {
-	req.SetDefaults()
-	return req.Validate()
+// prepareRequest copies the request, applies defaults, and validates it.
+// The original request is never modified.
+func prepareRequest(req *SearchRequest) (*SearchRequest, error) {
+	cp := *req
+	cp.SetDefaults()
+	if err := cp.Validate(); err != nil {
+		return nil, err
+	}
+	return &cp, nil
 }
 
 // Search performs a web search via Serper.dev.
 func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
-	if err := prepareRequest(req); err != nil {
+	prepared, err := prepareRequest(req)
+	if err != nil {
 		return nil, err
 	}
 	var resp SearchResponse
-	if err := c.doRequest(ctx, "/search", req, &resp); err != nil {
+	if err := c.doRequest(ctx, "/search", prepared, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -95,11 +109,12 @@ func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchRespons
 
 // Images performs an image search via Serper.dev.
 func (c *Client) Images(ctx context.Context, req *SearchRequest) (*ImagesResponse, error) {
-	if err := prepareRequest(req); err != nil {
+	prepared, err := prepareRequest(req)
+	if err != nil {
 		return nil, err
 	}
 	var resp ImagesResponse
-	if err := c.doRequest(ctx, "/images", req, &resp); err != nil {
+	if err := c.doRequest(ctx, "/images", prepared, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -107,11 +122,12 @@ func (c *Client) Images(ctx context.Context, req *SearchRequest) (*ImagesRespons
 
 // News performs a news search via Serper.dev.
 func (c *Client) News(ctx context.Context, req *SearchRequest) (*NewsResponse, error) {
-	if err := prepareRequest(req); err != nil {
+	prepared, err := prepareRequest(req)
+	if err != nil {
 		return nil, err
 	}
 	var resp NewsResponse
-	if err := c.doRequest(ctx, "/news", req, &resp); err != nil {
+	if err := c.doRequest(ctx, "/news", prepared, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -119,11 +135,12 @@ func (c *Client) News(ctx context.Context, req *SearchRequest) (*NewsResponse, e
 
 // Places performs a places search via Serper.dev.
 func (c *Client) Places(ctx context.Context, req *SearchRequest) (*PlacesResponse, error) {
-	if err := prepareRequest(req); err != nil {
+	prepared, err := prepareRequest(req)
+	if err != nil {
 		return nil, err
 	}
 	var resp PlacesResponse
-	if err := c.doRequest(ctx, "/places", req, &resp); err != nil {
+	if err := c.doRequest(ctx, "/places", prepared, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -131,17 +148,19 @@ func (c *Client) Places(ctx context.Context, req *SearchRequest) (*PlacesRespons
 
 // Scholar performs a scholar search via Serper.dev.
 func (c *Client) Scholar(ctx context.Context, req *SearchRequest) (*ScholarResponse, error) {
-	if err := prepareRequest(req); err != nil {
+	prepared, err := prepareRequest(req)
+	if err != nil {
 		return nil, err
 	}
 	var resp ScholarResponse
-	if err := c.doRequest(ctx, "/scholar", req, &resp); err != nil {
+	if err := c.doRequest(ctx, "/scholar", prepared, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
 }
 
 // CheckConnectivity verifies the API key and connectivity to Serper.dev.
+// Note: this makes a real search request that counts toward your API usage.
 func (c *Client) CheckConnectivity(ctx context.Context) error {
 	req := &SearchRequest{Q: "test", Num: 1}
 	_, err := c.Search(ctx, req)

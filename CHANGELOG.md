@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.2.0
+
+- fix(breaking): `New()` now returns `(*Client, error)` and rejects empty API keys
+- fix: `New()` validates base URL after options are applied (catches invalid URLs at construction)
+- fix: Client methods no longer mutate the caller's `*SearchRequest` (copy before applying defaults)
+- fix: CLI no longer applies a redundant `context.WithTimeout` that could conflict with retry timeouts
+- fix: `CheckConnectivity` doc now notes it makes a billable API request
+- test: Added `TestNew_EmptyAPIKey`, `TestNew_InvalidBaseURL` for constructor validation
+- test: Added `TestPlaces_Success`, `TestScholar_Success` for previously uncovered endpoints
+- test: Added `TestSearch_DoesNotMutateRequest` to verify no caller side effects
+- test: Added `TestSearch_ContextCancellation`, `TestSearch_MalformedJSONResponse`
+- test: Added `TestSearch_ErrorBodyTruncation`, `TestSearch_HTTP500`, `TestSearch_HTTP503`
+- test: Added `TestSetDefaults_PreservesExplicitValues`, `TestValidate_BoundaryValues`
+- test: Added `TestCheckConnectivity_Success`, `TestCheckConnectivity_Failure`
+- test: Added `TestSearch_EmptyResponseBody`, `TestDoRequest_UsesPostMethod`
+- test: Added `TestSearch_OmitsEmptyLocationFromBody`, `TestSearch_IncludesLocationWhenSet`
+- test: Added `TestWithAPIKey_InnerOverridesOuter`, `TestNew_LastOptionWins`
+
 ## 1.1.0
 
 - fix: Validate() now rejects Num < 1 and Page < 1 (previously allowed 0)

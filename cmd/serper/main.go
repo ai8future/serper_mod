@@ -42,17 +42,20 @@ func main() {
 		call.WithRetry(3, 500*time.Millisecond),
 	)
 
-	client := serper.New(cfg.APIKey,
+	client, err := serper.New(cfg.APIKey,
 		serper.WithBaseURL(cfg.BaseURL),
 		serper.WithDoer(caller),
 	)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		os.Exit(1)
+	}
 
 	logger.Debug("searching", "query", query, "num", cfg.Num, "gl", cfg.GL)
 
-	ctx, cancel := context.WithTimeout(context.Background(), cfg.Timeout)
-	defer cancel()
-
-	resp, err := client.Search(ctx, &serper.SearchRequest{
+	// call.Client already enforces per-attempt timeouts and handles retries,
+	// so no additional context timeout is needed here.
+	resp, err := client.Search(context.Background(), &serper.SearchRequest{
 		Q:   query,
 		Num: cfg.Num,
 		GL:  cfg.GL,
