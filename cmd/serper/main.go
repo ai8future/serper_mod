@@ -13,7 +13,7 @@ import (
 	chassisconfig "github.com/ai8future/chassis-go/config"
 	"github.com/ai8future/chassis-go/logz"
 
-	"serper_mod/serper"
+	"github.com/ai8future/serper_mod/serper"
 )
 
 // Config holds CLI configuration loaded from environment.
