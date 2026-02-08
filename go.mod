@@ -2,7 +2,7 @@ module github.com/ai8future/serper_mod
 
 go 1.25.5
 
-require github.com/ai8future/chassis-go v1.4.0
+require github.com/ai8future/chassis-go/v5 v5.0.0
 
 require (
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect

@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.0
+
+- feat: upgrade chassis-go from v4.0.0 to v5.0.0
+- chore: migrate all imports from `github.com/ai8future/chassis-go` to `github.com/ai8future/chassis-go/v5`
+- chore: update version gate from `RequireMajor(4)` to `RequireMajor(5)` in main.go and main_test.go
+- chore: update go.mod dependency to `github.com/ai8future/chassis-go/v5 v5.0.0`
+- chore: write VERSION.chassis file (5.0.0) (Claude:Opus 4.6)
+
 ## 1.2.0
 
 - fix(breaking): `New()` now returns `(*Client, error)` and rejects empty API keys
