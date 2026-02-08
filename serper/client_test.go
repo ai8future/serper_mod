@@ -498,8 +498,9 @@ func TestSearch_MalformedJSONResponse(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error for malformed JSON response")
 	}
-	if !strings.Contains(err.Error(), "unmarshal response") {
-		t.Errorf("error should mention 'unmarshal response', got: %v", err)
+	// secval.ValidateJSON catches invalid JSON before json.Unmarshal.
+	if !strings.Contains(err.Error(), "unsafe response body") {
+		t.Errorf("error should mention 'unsafe response body', got: %v", err)
 	}
 }
 

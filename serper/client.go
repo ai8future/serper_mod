@@ -9,6 +9,9 @@ import (
 	"net/http"
 	"net/url"
 	"time"
+
+	chassiserrors "github.com/ai8future/chassis-go/errors"
+	"github.com/ai8future/chassis-go/secval"
 )
 
 const (
@@ -203,7 +206,25 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody, respBo
 		if len(msg) > maxErrorBodyBytes {
 			msg = msg[:maxErrorBodyBytes] + "...(truncated)"
 		}
-		return fmt.Errorf("serper: HTTP %d: %s", resp.StatusCode, msg)
+		detail := fmt.Sprintf("serper: HTTP %d: %s", resp.StatusCode, msg)
+		switch resp.StatusCode {
+		case http.StatusBadRequest:
+			return chassiserrors.ValidationError(detail)
+		case http.StatusUnauthorized:
+			return chassiserrors.UnauthorizedError(detail)
+		case http.StatusNotFound:
+			return chassiserrors.NotFoundError(detail)
+		case http.StatusTooManyRequests:
+			return chassiserrors.RateLimitError(detail)
+		case http.StatusBadGateway, http.StatusServiceUnavailable:
+			return chassiserrors.DependencyError(detail)
+		default:
+			return chassiserrors.InternalError(detail)
+		}
+	}
+
+	if err := secval.ValidateJSON(body); err != nil {
+		return chassiserrors.ValidationError(fmt.Sprintf("serper: unsafe response body: %v", err))
 	}
 
 	if err := json.Unmarshal(body, respBody); err != nil {

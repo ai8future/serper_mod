@@ -1,11 +1,20 @@
 package main
 
 import (
+	"os"
 	"testing"
 
+	chassis "github.com/ai8future/chassis-go"
 	chassisconfig "github.com/ai8future/chassis-go/config"
 	"github.com/ai8future/chassis-go/testkit"
 )
+
+func TestMain(m *testing.M) {
+	chassis.RequireMajor(4)
+	code := m.Run()
+	chassis.ResetVersionCheck()
+	os.Exit(code)
+}
 
 func TestConfig_Defaults(t *testing.T) {
 	testkit.SetEnv(t, map[string]string{
