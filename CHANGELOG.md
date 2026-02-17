@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.0
+
+- docs: add comprehensive README.md with full API reference, architecture diagram, usage examples, error handling guide, and CLI configuration (Claude:Opus 4.6)
+
 ## 1.4.0
 
 - feat: upgrade chassis-go from v4.0.0 to v5.0.0
