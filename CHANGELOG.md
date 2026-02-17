@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.6.0
+
+- docs: rewrite README.md with deeper architecture analysis, detailed data flow diagram, expanded coverage documentation, local development instructions, and design decision rationale (Claude:Opus 4.6)
+
 ## 1.5.0
 
 - docs: add comprehensive README.md with full API reference, architecture diagram, usage examples, error handling guide, and CLI configuration (Claude:Opus 4.6)
