@@ -162,6 +162,32 @@ func (c *Client) Scholar(ctx context.Context, req *SearchRequest) (*ScholarRespo
 	return &resp, nil
 }
 
+// Shopping performs a shopping search via Serper.dev.
+func (c *Client) Shopping(ctx context.Context, req *SearchRequest) (*ShoppingResponse, error) {
+	prepared, err := prepareRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var resp ShoppingResponse
+	if err := c.doRequest(ctx, "/shopping", prepared, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
+// Videos performs a video search via Serper.dev.
+func (c *Client) Videos(ctx context.Context, req *SearchRequest) (*VideosResponse, error) {
+	prepared, err := prepareRequest(req)
+	if err != nil {
+		return nil, err
+	}
+	var resp VideosResponse
+	if err := c.doRequest(ctx, "/videos", prepared, &resp); err != nil {
+		return nil, err
+	}
+	return &resp, nil
+}
+
 // CheckConnectivity verifies the API key and connectivity to Serper.dev.
 // Note: this makes a real search request that counts toward your API usage.
 func (c *Client) CheckConnectivity(ctx context.Context) error {

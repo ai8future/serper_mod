@@ -143,6 +143,44 @@ type ScholarResult struct {
 	Position        int      `json:"position"`
 }
 
+// ShoppingResponse represents the response from Serper.dev shopping endpoint.
+type ShoppingResponse struct {
+	SearchParameters SearchParameters `json:"searchParameters"`
+	Shopping         []ShoppingResult `json:"shopping"`
+}
+
+// ShoppingResult represents a single shopping search result.
+type ShoppingResult struct {
+	Title       string  `json:"title"`
+	Source      string  `json:"source"`
+	Link        string  `json:"link"`
+	Price       string  `json:"price"`
+	ImageURL    string  `json:"imageUrl,omitempty"`
+	Rating      float64 `json:"rating,omitempty"`
+	RatingCount int     `json:"ratingCount,omitempty"`
+	Delivery    string  `json:"delivery,omitempty"`
+	Position    int     `json:"position"`
+}
+
+// VideosResponse represents the response from Serper.dev videos endpoint.
+type VideosResponse struct {
+	SearchParameters SearchParameters `json:"searchParameters"`
+	Videos           []VideoResult    `json:"videos"`
+}
+
+// VideoResult represents a single video search result.
+type VideoResult struct {
+	Title    string `json:"title"`
+	Link     string `json:"link"`
+	Snippet  string `json:"snippet"`
+	ImageURL string `json:"imageUrl,omitempty"`
+	Duration string `json:"duration,omitempty"`
+	Source   string `json:"source,omitempty"`
+	Channel  string `json:"channel,omitempty"`
+	Date     string `json:"date,omitempty"`
+	Position int    `json:"position"`
+}
+
 // SetDefaults applies default values to a SearchRequest.
 func (r *SearchRequest) SetDefaults() {
 	if r.Num == 0 {

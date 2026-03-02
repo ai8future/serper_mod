@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.7.0
+
+- feat: add Shopping and Videos search support — `ShoppingResponse`, `ShoppingResult`, `VideosResponse`, `VideoResult` types in types.go; `Shopping()` and `Videos()` client methods hitting `/shopping` and `/videos` endpoints (Claude:Sonnet 4.6)
+
 ## 1.6.0
 
 - docs: rewrite README.md with deeper architecture analysis, detailed data flow diagram, expanded coverage documentation, local development instructions, and design decision rationale (Claude:Opus 4.6)
