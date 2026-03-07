@@ -194,7 +194,7 @@ HTTP errors from the Serper.dev API are mapped to typed `chassis-go` errors with
 Inspect typed errors with `errors.As`:
 
 ```go
-import chassiserrors "github.com/ai8future/chassis-go/v5/errors"
+import chassiserrors "github.com/ai8future/chassis-go/v6/errors"
 
 var se *chassiserrors.ServiceError
 if errors.As(err, &se) {
@@ -278,11 +278,11 @@ serper_mod/
 
 **Key design decisions:**
 
-- **Library has no CLI dependencies.** The `serper` package only imports `chassis-go/v5/errors` and `chassis-go/v5/secval` (both pure functions, no I/O). Config loading, logging, and retry logic are CLI-only concerns.
+- **Library has no CLI dependencies.** The `serper` package only imports `chassis-go/v6/errors` and `chassis-go/v6/secval` (both pure functions, no I/O). Config loading, logging, and retry logic are CLI-only concerns.
 - **Single `Doer` interface** is the sole abstraction point between the library and the network, keeping the seam narrow and testable.
 - **Copy-before-mutate** in `prepareRequest` ensures callers can safely reuse `SearchRequest` structs across calls.
 - **`GetBody` is always set** on outgoing requests to enable retry middleware to replay the body without re-serialization.
-- **Version gate** (`chassis.RequireMajor(5)`) at CLI startup prevents silent ABI mismatches if the chassis-go major version changes.
+- **Version gate** (`chassis.RequireMajor(6)`) at CLI startup prevents silent ABI mismatches if the chassis-go major version changes.
 
 ## Testing
 
@@ -309,17 +309,17 @@ go test ./...
 
 ## Dependencies
 
-Built on [chassis-go/v5](https://github.com/ai8future/chassis-go), an internal Go framework:
+Built on [chassis-go/v6](https://github.com/ai8future/chassis-go), an internal Go framework:
 
 | Package | Used By | Purpose |
 |---------|---------|---------|
-| `chassis` | CLI | Version gate (`RequireMajor(5)`) |
-| `chassis-go/v5/errors` | Library | Typed error constructors with HTTP + gRPC codes |
-| `chassis-go/v5/secval` | Library | JSON response security validation |
-| `chassis-go/v5/call` | CLI | Resilient HTTP client (retry + timeout + OTel tracing) |
-| `chassis-go/v5/config` | CLI | Struct-tag-based environment variable config loader |
-| `chassis-go/v5/logz` | CLI | Structured JSON logger |
-| `chassis-go/v5/testkit` | CLI tests | Test environment helpers |
+| `chassis` | CLI | Version gate (`RequireMajor(6)`) |
+| `chassis-go/v6/errors` | Library | Typed error constructors with HTTP + gRPC codes |
+| `chassis-go/v6/secval` | Library | JSON response security validation |
+| `chassis-go/v6/call` | CLI | Resilient HTTP client (retry + timeout + OTel tracing) |
+| `chassis-go/v6/config` | CLI | Struct-tag-based environment variable config loader |
+| `chassis-go/v6/logz` | CLI | Structured JSON logger |
+| `chassis-go/v6/testkit` | CLI tests | Test environment helpers |
 
 Transitive dependencies include OpenTelemetry (`go.opentelemetry.io/otel`), gRPC status codes (`google.golang.org/grpc`), and standard Go libraries.
 

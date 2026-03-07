@@ -1,4 +1,5 @@
 Date Created: 2026-02-03 23:10:56
+Date Updated: 2026-02-15T22:50:52-05:00
 TOTAL_SCORE: 92/100
 
 # Test Coverage Analysis Report
@@ -8,18 +9,19 @@ The `serper_mod` codebase demonstrates a solid foundation of testing, particular
 
 ## Grading Breakdown (92/100)
 *   **Core Logic (Serper Client): 38/40** - Excellent coverage of happy paths and common error conditions.
-*   **Edge Cases & Error Handling: 25/30** - Most HTTP errors are handled, but some edge cases (malformed JSON structure, concurrency) were missing.
+*   **Edge Cases & Error Handling: 25/30** - Most HTTP errors are handled, but some edge cases (concurrency) were missing.
 *   **CLI / Configuration: 15/20** - Basic config loading is tested, but default values for all fields (specifically `LogLevel`) were not fully verified. `main` function integration is standard but minimal.
 *   **Test Quality & Idioms: 14/10** - Tests are idiomatic, readable, and use table-driven tests where appropriate.
 
 ## Proposed Improvements
-To achieve 100% confidence and robustness, the following tests are proposed:
 
 1.  **Concurrency Safety (`serper/client_test.go`)**:
     The client is designed to be safe for concurrent use (immutable configuration after creation, local request context). A test spawning multiple goroutines verifies this assumption and protects against future regressions (e.g., introducing shared mutable state).
+    **NOTE (2026-02-15):** The diff below uses `mockDoer` which is NOT concurrency-safe (writes to shared `req`/`body` fields without sync). Use a stateless mock instead. See `serper_mod-claude-test-20260215225052.md` for corrected version.
 
-2.  **Unexpected JSON Structure (`serper/client_test.go`)**:
-    The current tests cover invalid JSON syntax, but not valid JSON that doesn't match the expected type (e.g., receiving a JSON array `[]` when an object `{}` is expected). This ensures the unmarshaller reports a useful error.
+2.  ~~**Unexpected JSON Structure (`serper/client_test.go`)**:~~
+    ~~The current tests cover invalid JSON syntax, but not valid JSON that doesn't match the expected type (e.g., receiving a JSON array `[]` when an object `{}` is expected). This ensures the unmarshaller reports a useful error.~~
+    **REMOVED (2026-02-15):** This test would FAIL as written. Go's `json.Unmarshal` of `[]` into a struct pointer produces a zero-value struct without error (after `secval.ValidateJSON` passes). The test incorrectly asserts an error. This tests standard library behavior, not application code.
 
 3.  **Configuration Defaults (`cmd/serper/main_test.go`)**:
     The `LogLevel` default value was not explicitly verified in the existing configuration tests.
@@ -27,7 +29,7 @@ To achieve 100% confidence and robustness, the following tests are proposed:
 ## Patch-Ready Diffs
 
 ### 1. `serper/client_test.go`
-Adds `TestClient_ConcurrentRequests` and `TestSearch_UnexpectedJSONStructure`.
+Adds `TestClient_ConcurrentRequests` (see note above about mock fix).
 
 ```diff
 --- serper/client_test.go
@@ -57,19 +59,6 @@ Adds `TestClient_ConcurrentRequests` and `TestSearch_UnexpectedJSONStructure`.
 +		}
 +	}
 +}
-+
-+func TestSearch_UnexpectedJSONStructure(t *testing.T) {
-+	mock := &mockDoer{statusCode: 200, respBody: `[]`}
-+	c := mustNew(t, "key", WithDoer(mock))
-+
-+	_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})
-+	if err == nil {
-+		t.Fatal("expected error for JSON array response")
-+	}
-+	if !strings.Contains(err.Error(), "unmarshal response") {
-+		t.Errorf("error should mention 'unmarshal response', got: %v", err)
-+	}
-+}
 ```
 
 ### 2. `cmd/serper/main_test.go`
@@ -86,6 +75,6 @@ Verifies `LogLevel` default.
 +		t.Errorf("expected default LogLevel 'error', got %q", cfg.LogLevel)
 +	}
  }
- 
+
  func TestConfig_PanicsWithoutAPIKey(t *testing.T) {
 ```

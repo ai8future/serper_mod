@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	chassis "github.com/ai8future/chassis-go/v5"
-	"github.com/ai8future/chassis-go/v5/call"
-	chassisconfig "github.com/ai8future/chassis-go/v5/config"
-	"github.com/ai8future/chassis-go/v5/logz"
+	chassis "github.com/ai8future/chassis-go/v6"
+	"github.com/ai8future/chassis-go/v6/call"
+	chassisconfig "github.com/ai8future/chassis-go/v6/config"
+	"github.com/ai8future/chassis-go/v6/logz"
 
 	"github.com/ai8future/serper_mod/serper"
 )
@@ -29,7 +29,7 @@ type Config struct {
 }
 
 func main() {
-	chassis.RequireMajor(5)
+	chassis.RequireMajor(6)
 	cfg := chassisconfig.MustLoad[Config]()
 	logger := logz.New(cfg.LogLevel)
 	logger.Info("starting", "chassis_version", chassis.Version)

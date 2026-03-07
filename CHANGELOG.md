@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.8.1] - 2026-03-07
+- Sync uncommitted changes
+
+## 1.8.0
+
+- feat: upgrade chassis-go from v5.0.0 to v6.0.0
+- chore: migrate all imports from `github.com/ai8future/chassis-go/v5` to `github.com/ai8future/chassis-go/v6`
+- chore: update version gate from `RequireMajor(5)` to `RequireMajor(6)` in main.go and main_test.go
+- chore: update go.mod dependency to `github.com/ai8future/chassis-go/v6 v6.0.0` (Claude:Opus 4.6)
+
+
 ## 1.7.0
 
 - feat: add Shopping and Videos search support — `ShoppingResponse`, `ShoppingResult`, `VideosResponse`, `VideoResult` types in types.go; `Shopping()` and `Videos()` client methods hitting `/shopping` and `/videos` endpoints (Claude:Sonnet 4.6)

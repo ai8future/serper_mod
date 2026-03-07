@@ -1,0 +1,10 @@
+mode: set
+github.com/ai8future/serper_mod/cmd/serper/main.go:31.13,37.22 5 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:37.22,40.3 2 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:41.2,52.16 4 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:52.16,55.3 2 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:57.2,67.16 3 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:67.16,70.3 2 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:72.2,73.16 2 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:73.16,76.3 2 0
+github.com/ai8future/serper_mod/cmd/serper/main.go:77.2,77.26 1 0
