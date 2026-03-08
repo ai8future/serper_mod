@@ -10,8 +10,8 @@ import (
 	"net/url"
 	"time"
 
-	chassiserrors "github.com/ai8future/chassis-go/v6/errors"
-	"github.com/ai8future/chassis-go/v6/secval"
+	chassiserrors "github.com/ai8future/chassis-go/v8/errors"
+	"github.com/ai8future/chassis-go/v8/secval"
 )
 
 const (

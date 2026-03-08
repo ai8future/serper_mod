@@ -5,14 +5,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 	"time"
 
-	chassis "github.com/ai8future/chassis-go/v6"
-	"github.com/ai8future/chassis-go/v6/call"
-	chassisconfig "github.com/ai8future/chassis-go/v6/config"
-	"github.com/ai8future/chassis-go/v6/logz"
+	chassis "github.com/ai8future/chassis-go/v8"
+	"github.com/ai8future/chassis-go/v8/call"
+	chassisconfig "github.com/ai8future/chassis-go/v8/config"
+	"github.com/ai8future/chassis-go/v8/logz"
+	"github.com/ai8future/chassis-go/v8/registry"
 
 	"github.com/ai8future/serper_mod/serper"
 )
@@ -29,7 +31,12 @@ type Config struct {
 }
 
 func main() {
-	chassis.RequireMajor(6)
+	chassis.RequireMajor(8)
+
+	if err := registry.InitCLI(chassis.Version); err != nil {
+		log.Fatalf("registry: %v", err)
+	}
+
 	cfg := chassisconfig.MustLoad[Config]()
 	logger := logz.New(cfg.LogLevel)
 	logger.Info("starting", "chassis_version", chassis.Version)
@@ -75,4 +82,6 @@ func main() {
 		os.Exit(1)
 	}
 	fmt.Println(string(out))
+
+	registry.ShutdownCLI(0)
 }
