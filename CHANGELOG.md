@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.8.3] - 2026-03-08
+- Upgrade chassis-go from v8 to v9: update all import paths, go.mod require/replace, RequireMajor(9), VERSION.chassis
+- Agent: Claude:Opus 4.6
+
 ## [1.8.2] - 2026-03-08
 - Fix go.mod version: correct chassis-go/v8 version from v7.0.0 to v8.0.0
 - (Claude Code:Opus 4.6)

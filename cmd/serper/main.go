@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	chassis "github.com/ai8future/chassis-go/v8"
-	"github.com/ai8future/chassis-go/v8/call"
-	chassisconfig "github.com/ai8future/chassis-go/v8/config"
-	"github.com/ai8future/chassis-go/v8/logz"
-	"github.com/ai8future/chassis-go/v8/registry"
+	chassis "github.com/ai8future/chassis-go/v9"
+	"github.com/ai8future/chassis-go/v9/call"
+	chassisconfig "github.com/ai8future/chassis-go/v9/config"
+	"github.com/ai8future/chassis-go/v9/logz"
+	"github.com/ai8future/chassis-go/v9/registry"
 
 	"github.com/ai8future/serper_mod/serper"
 )
@@ -31,7 +31,7 @@ type Config struct {
 }
 
 func main() {
-	chassis.RequireMajor(8)
+	chassis.RequireMajor(9)
 
 	if err := registry.InitCLI(chassis.Version); err != nil {
 		log.Fatalf("registry: %v", err)
