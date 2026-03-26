@@ -43,5 +43,8 @@ dist/
 # Claude
 .claude/settings.local.json
 
+# Build output
+bin/
+
 # Project-specific
 /cmd/serper/serper

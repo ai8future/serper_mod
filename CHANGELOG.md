@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.8.5] - 2026-03-26
+- GO-BEST-PRACTICES conformance: Makefile with cross-platform build targets (build-linux, build-darwin, build-all), launcher script, binary naming, LDFLAGS with version injection, CGO_ENABLED=0 static builds
+- Agent: Claude:Opus 4.6
+
 ## [1.8.4] - 2026-03-22
 - Upgrade chassis-go from v9 to v10: update all import paths, go.mod require/replace, RequireMajor(10), VERSION.chassis
 - Agent: Claude:Opus 4.6

@@ -19,6 +19,9 @@ import (
 	"github.com/ai8future/serper_mod/serper"
 )
 
+// version is set at build time via -ldflags "-X main.version=..."
+var version = "dev"
+
 // Config holds CLI configuration loaded from environment.
 type Config struct {
 	APIKey  string        `env:"SERPER_API_KEY" required:"true"`
