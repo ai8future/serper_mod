@@ -1,5 +1,16 @@
 # Changelog
 
+## [1.8.7] - 2026-03-27
+- test: add HTTP status code mapping tests (400, 403, 404, 429, 502)
+- test: add concurrent client usage test with stateless mock and race detector
+- test: add nil request guard test
+- test: add nil doer guard test
+- test: add trailing slash normalization test
+- test: add response size overflow test
+- test: add whitespace query validation test
+- Coverage: serper pkg 86.1% → 93.1%
+- Agent: Claude:Opus 4.6
+
 ## [1.8.6] - 2026-03-27
 - fix: nil request guard in prepareRequest (prevents panic on nil *SearchRequest)
 - fix: nil doer guard in New() (prevents deferred panic when WithDoer(nil) is passed)

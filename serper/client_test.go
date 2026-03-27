@@ -376,6 +376,12 @@ func TestSearchRequest_Validate(t *testing.T) {
 			wantErr: true,
 			errMsg:  "page",
 		},
+		{
+			name:    "whitespace query",
+			req:     SearchRequest{Q: "   ", Num: 10, Page: 1},
+			wantErr: true,
+			errMsg:  "query",
+		},
 	}
 
 	for _, tt := range tests {
@@ -721,5 +727,125 @@ func TestNew_LastOptionWins(t *testing.T) {
 	)
 	if c.baseURL != "https://second.com" {
 		t.Errorf("baseURL: got %q, want %q", c.baseURL, "https://second.com")
+	}
+}
+
+func TestSearch_HTTPStatusCodeMapping(t *testing.T) {
+	tests := []struct {
+		name       string
+		statusCode int
+	}{
+		{"400 Bad Request", 400},
+		{"403 Forbidden", 403},
+		{"404 Not Found", 404},
+		{"429 Too Many Requests", 429},
+		{"502 Bad Gateway", 502},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mock := &mockDoer{statusCode: tt.statusCode, respBody: `{"error":"test"}`}
+			c := mustNew(t, "key", WithDoer(mock))
+
+			_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})
+			if err == nil {
+				t.Fatalf("expected error for HTTP %d", tt.statusCode)
+			}
+			if !strings.Contains(err.Error(), fmt.Sprintf("%d", tt.statusCode)) {
+				t.Errorf("error should contain %q, got: %v", fmt.Sprintf("%d", tt.statusCode), err)
+			}
+		})
+	}
+}
+
+// concurrentSafeDoer is a stateless mock for concurrency tests.
+type concurrentSafeDoer struct {
+	statusCode int
+	respBody   string
+}
+
+func (d *concurrentSafeDoer) Do(req *http.Request) (*http.Response, error) {
+	return &http.Response{
+		StatusCode: d.statusCode,
+		Body:       io.NopCloser(strings.NewReader(d.respBody)),
+	}, nil
+}
+
+func TestClient_ConcurrentRequests(t *testing.T) {
+	doer := &concurrentSafeDoer{statusCode: 200, respBody: `{"organic":[]}`}
+	c := mustNew(t, "key", WithDoer(doer))
+
+	concurrency := 10
+	errCh := make(chan error, concurrency)
+
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})
+			errCh <- err
+		}()
+	}
+
+	for i := 0; i < concurrency; i++ {
+		if err := <-errCh; err != nil {
+			t.Errorf("concurrent search error: %v", err)
+		}
+	}
+}
+
+func TestSearch_NilRequest(t *testing.T) {
+	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
+	c := mustNew(t, "key", WithDoer(mock))
+
+	_, err := c.Search(context.Background(), nil)
+	if err == nil {
+		t.Fatal("expected error for nil request")
+	}
+	if !strings.Contains(err.Error(), "request must not be nil") {
+		t.Errorf("error should mention nil request, got: %v", err)
+	}
+	if mock.req != nil {
+		t.Error("no HTTP request should have been made for nil input")
+	}
+}
+
+func TestNew_NilDoer(t *testing.T) {
+	_, err := New("key", WithDoer(nil))
+	if err == nil {
+		t.Fatal("expected error for nil doer")
+	}
+	if !strings.Contains(err.Error(), "doer") {
+		t.Errorf("error should mention doer, got: %v", err)
+	}
+}
+
+func TestSearch_NormalizesTrailingSlashBaseURL(t *testing.T) {
+	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
+	c := mustNew(t, "key", WithDoer(mock), WithBaseURL("https://api.test/"))
+
+	_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if mock.req == nil {
+		t.Fatal("expected request to be captured")
+	}
+	wantURL := "https://api.test/search"
+	if mock.req.URL.String() != wantURL {
+		t.Errorf("URL: got %q, want %q", mock.req.URL.String(), wantURL)
+	}
+}
+
+func TestSearch_ResponseTooLarge(t *testing.T) {
+	largeBody := strings.Repeat("x", maxResponseBytes+20)
+	mock := &mockDoer{statusCode: 200, respBody: largeBody}
+	c := mustNew(t, "key", WithDoer(mock))
+
+	_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})
+	if err == nil {
+		t.Fatal("expected error for oversized response body")
+	}
+	if !strings.Contains(err.Error(), "exceeds") {
+		t.Errorf("error should mention size limit, got: %v", err)
 	}
 }
