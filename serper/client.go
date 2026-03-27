@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 
 	chassiserrors "github.com/ai8future/chassis-go/v10/errors"
@@ -60,6 +61,10 @@ func New(apiKey string, opts ...Option) (*Client, error) {
 	for _, o := range opts {
 		o(c)
 	}
+	if c.doer == nil {
+		return nil, fmt.Errorf("serper: doer must not be nil")
+	}
+	c.baseURL = strings.TrimRight(c.baseURL, "/")
 	if _, err := url.ParseRequestURI(c.baseURL); err != nil {
 		return nil, fmt.Errorf("serper: invalid base URL %q: %w", c.baseURL, err)
 	}
@@ -89,6 +94,9 @@ func (c *Client) getAPIKey(ctx context.Context) string {
 // prepareRequest copies the request, applies defaults, and validates it.
 // The original request is never modified.
 func prepareRequest(req *SearchRequest) (*SearchRequest, error) {
+	if req == nil {
+		return nil, fmt.Errorf("serper: request must not be nil")
+	}
 	cp := *req
 	cp.SetDefaults()
 	if err := cp.Validate(); err != nil {
@@ -97,95 +105,52 @@ func prepareRequest(req *SearchRequest) (*SearchRequest, error) {
 	return &cp, nil
 }
 
-// Search performs a web search via Serper.dev.
-func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
+// doSearch is a generic helper that validates, sends, and decodes a search request.
+func doSearch[T any](c *Client, ctx context.Context, endpoint string, req *SearchRequest) (*T, error) {
 	prepared, err := prepareRequest(req)
 	if err != nil {
 		return nil, err
 	}
-	var resp SearchResponse
-	if err := c.doRequest(ctx, "/search", prepared, &resp); err != nil {
+	var resp T
+	if err := c.doRequest(ctx, endpoint, prepared, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// Search performs a web search via Serper.dev.
+func (c *Client) Search(ctx context.Context, req *SearchRequest) (*SearchResponse, error) {
+	return doSearch[SearchResponse](c, ctx, "/search", req)
 }
 
 // Images performs an image search via Serper.dev.
 func (c *Client) Images(ctx context.Context, req *SearchRequest) (*ImagesResponse, error) {
-	prepared, err := prepareRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	var resp ImagesResponse
-	if err := c.doRequest(ctx, "/images", prepared, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return doSearch[ImagesResponse](c, ctx, "/images", req)
 }
 
 // News performs a news search via Serper.dev.
 func (c *Client) News(ctx context.Context, req *SearchRequest) (*NewsResponse, error) {
-	prepared, err := prepareRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	var resp NewsResponse
-	if err := c.doRequest(ctx, "/news", prepared, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return doSearch[NewsResponse](c, ctx, "/news", req)
 }
 
 // Places performs a places search via Serper.dev.
 func (c *Client) Places(ctx context.Context, req *SearchRequest) (*PlacesResponse, error) {
-	prepared, err := prepareRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	var resp PlacesResponse
-	if err := c.doRequest(ctx, "/places", prepared, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return doSearch[PlacesResponse](c, ctx, "/places", req)
 }
 
 // Scholar performs a scholar search via Serper.dev.
 func (c *Client) Scholar(ctx context.Context, req *SearchRequest) (*ScholarResponse, error) {
-	prepared, err := prepareRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	var resp ScholarResponse
-	if err := c.doRequest(ctx, "/scholar", prepared, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return doSearch[ScholarResponse](c, ctx, "/scholar", req)
 }
 
 // Shopping performs a shopping search via Serper.dev.
 func (c *Client) Shopping(ctx context.Context, req *SearchRequest) (*ShoppingResponse, error) {
-	prepared, err := prepareRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	var resp ShoppingResponse
-	if err := c.doRequest(ctx, "/shopping", prepared, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return doSearch[ShoppingResponse](c, ctx, "/shopping", req)
 }
 
 // Videos performs a video search via Serper.dev.
 func (c *Client) Videos(ctx context.Context, req *SearchRequest) (*VideosResponse, error) {
-	prepared, err := prepareRequest(req)
-	if err != nil {
-		return nil, err
-	}
-	var resp VideosResponse
-	if err := c.doRequest(ctx, "/videos", prepared, &resp); err != nil {
-		return nil, err
-	}
-	return &resp, nil
+	return doSearch[VideosResponse](c, ctx, "/videos", req)
 }
 
 // CheckConnectivity verifies the API key and connectivity to Serper.dev.
@@ -222,13 +187,16 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody, respBo
 	}
 	defer resp.Body.Close()
 
-	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes))
+	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
 		return fmt.Errorf("serper: read response: %w", err)
 	}
+	if len(body) > maxResponseBytes {
+		return fmt.Errorf("serper: response body exceeds %d byte limit", maxResponseBytes)
+	}
 
 	if resp.StatusCode >= 400 {
-		msg := string(body)
+		msg := sanitizeForLog(string(body))
 		if len(msg) > maxErrorBodyBytes {
 			msg = msg[:maxErrorBodyBytes] + "...(truncated)"
 		}
@@ -238,6 +206,8 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody, respBo
 			return chassiserrors.ValidationError(detail)
 		case http.StatusUnauthorized:
 			return chassiserrors.UnauthorizedError(detail)
+		case http.StatusForbidden:
+			return chassiserrors.ForbiddenError(detail)
 		case http.StatusNotFound:
 			return chassiserrors.NotFoundError(detail)
 		case http.StatusTooManyRequests:
@@ -258,4 +228,14 @@ func (c *Client) doRequest(ctx context.Context, endpoint string, reqBody, respBo
 	}
 
 	return nil
+}
+
+// sanitizeForLog replaces control characters with spaces to prevent log injection.
+func sanitizeForLog(s string) string {
+	return strings.Map(func(r rune) rune {
+		if r < 0x20 || r == 0x7f {
+			return ' '
+		}
+		return r
+	}, s)
 }

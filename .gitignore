@@ -25,6 +25,7 @@ venv/
 # Go
 *.exe
 *.test
+*.out
 .gocache/
 go.work
 go.work.sum

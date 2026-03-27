@@ -1,5 +1,20 @@
 # Changelog
 
+## [1.8.6] - 2026-03-27
+- fix: nil request guard in prepareRequest (prevents panic on nil *SearchRequest)
+- fix: nil doer guard in New() (prevents deferred panic when WithDoer(nil) is passed)
+- fix: trailing slash normalization on baseURL (prevents double-slash URLs)
+- fix: HTTP 403 Forbidden now maps to ForbiddenError instead of InternalError
+- fix: response size overflow detection (clear error instead of misleading JSON parse failure)
+- fix: whitespace-only queries now rejected by Validate()
+- fix: validation errors now use typed chassiserrors.ValidationError for consistency
+- fix: error body sanitized for log injection (control chars replaced with spaces)
+- refactor: generic doSearch[T] helper eliminates 7x endpoint method duplication
+- feat: CLI now exposes SERPER_LOCATION env var for geo-targeted searches
+- chore: add *.out to .gitignore for coverage file hygiene
+- chore: fix pre-existing gofmt drift in client_test.go
+- Agent: Claude:Opus 4.6
+
 ## [1.8.5] - 2026-03-26
 - GO-BEST-PRACTICES conformance: Makefile with cross-platform build targets (build-linux, build-darwin, build-all), launcher script, binary naming, LDFLAGS with version injection, CGO_ENABLED=0 static builds
 - Agent: Claude:Opus 4.6

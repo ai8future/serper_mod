@@ -165,7 +165,7 @@ func TestSearch_DoerError(t *testing.T) {
 
 func TestWithAPIKey_Override(t *testing.T) {
 	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
-	c := mustNew(t,"default-key", WithDoer(mock))
+	c := mustNew(t, "default-key", WithDoer(mock))
 
 	ctx := WithAPIKey(context.Background(), "override-key")
 	_, _ = c.Search(ctx, &SearchRequest{Q: "test"})
@@ -180,7 +180,7 @@ func TestWithAPIKey_Override(t *testing.T) {
 
 func TestWithAPIKey_EmptyDoesNotOverride(t *testing.T) {
 	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
-	c := mustNew(t,"default-key", WithDoer(mock))
+	c := mustNew(t, "default-key", WithDoer(mock))
 
 	ctx := WithAPIKey(context.Background(), "")
 	_, _ = c.Search(ctx, &SearchRequest{Q: "test"})
@@ -201,7 +201,7 @@ func TestImages_Success(t *testing.T) {
 		]
 	}`
 	mock := &mockDoer{statusCode: 200, respBody: respJSON}
-	c := mustNew(t,"key", WithDoer(mock), WithBaseURL("https://api.test"))
+	c := mustNew(t, "key", WithDoer(mock), WithBaseURL("https://api.test"))
 
 	resp, err := c.Images(context.Background(), &SearchRequest{Q: "cats"})
 	if err != nil {
@@ -226,7 +226,7 @@ func TestNews_Success(t *testing.T) {
 		]
 	}`
 	mock := &mockDoer{statusCode: 200, respBody: respJSON}
-	c := mustNew(t,"key", WithDoer(mock), WithBaseURL("https://api.test"))
+	c := mustNew(t, "key", WithDoer(mock), WithBaseURL("https://api.test"))
 
 	resp, err := c.News(context.Background(), &SearchRequest{Q: "tech"})
 	if err != nil {
@@ -245,7 +245,7 @@ func TestNews_Success(t *testing.T) {
 
 func TestGetBody_RetrySupport(t *testing.T) {
 	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
-	c := mustNew(t,"key", WithDoer(mock))
+	c := mustNew(t, "key", WithDoer(mock))
 
 	_, _ = c.Search(context.Background(), &SearchRequest{Q: "test"})
 
@@ -277,7 +277,7 @@ func TestGetBody_RetrySupport(t *testing.T) {
 
 func TestSearch_ValidationError(t *testing.T) {
 	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
-	c := mustNew(t,"key", WithDoer(mock))
+	c := mustNew(t, "key", WithDoer(mock))
 
 	_, err := c.Search(context.Background(), &SearchRequest{Q: ""})
 	if err == nil {
@@ -293,7 +293,7 @@ func TestSearch_ValidationError(t *testing.T) {
 
 func TestSearch_AppliesDefaults(t *testing.T) {
 	mock := &mockDoer{statusCode: 200, respBody: `{"organic":[]}`}
-	c := mustNew(t,"key", WithDoer(mock))
+	c := mustNew(t, "key", WithDoer(mock))
 
 	// Pass only Q; Num/GL/HL/Page should get defaults from prepareRequest.
 	_, err := c.Search(context.Background(), &SearchRequest{Q: "test"})

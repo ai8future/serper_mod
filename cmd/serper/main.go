@@ -24,13 +24,14 @@ var version = "dev"
 
 // Config holds CLI configuration loaded from environment.
 type Config struct {
-	APIKey  string        `env:"SERPER_API_KEY" required:"true"`
-	BaseURL string        `env:"SERPER_BASE_URL" default:"https://google.serper.dev"`
-	Num     int           `env:"SERPER_NUM" default:"10"`
-	GL      string        `env:"SERPER_GL" default:"us"`
-	HL      string        `env:"SERPER_HL" default:"en"`
-	Timeout time.Duration `env:"SERPER_TIMEOUT" default:"30s"`
-	LogLevel string       `env:"LOG_LEVEL" default:"error"`
+	APIKey   string        `env:"SERPER_API_KEY" required:"true"`
+	BaseURL  string        `env:"SERPER_BASE_URL" default:"https://google.serper.dev"`
+	Num      int           `env:"SERPER_NUM" default:"10"`
+	GL       string        `env:"SERPER_GL" default:"us"`
+	HL       string        `env:"SERPER_HL" default:"en"`
+	Location string        `env:"SERPER_LOCATION" required:"false"`
+	Timeout  time.Duration `env:"SERPER_TIMEOUT" default:"30s"`
+	LogLevel string        `env:"LOG_LEVEL" default:"error"`
 }
 
 func main() {
@@ -69,10 +70,11 @@ func main() {
 	// call.Client already enforces per-attempt timeouts and handles retries,
 	// so no additional context timeout is needed here.
 	resp, err := client.Search(context.Background(), &serper.SearchRequest{
-		Q:   query,
-		Num: cfg.Num,
-		GL:  cfg.GL,
-		HL:  cfg.HL,
+		Q:        query,
+		Num:      cfg.Num,
+		GL:       cfg.GL,
+		HL:       cfg.HL,
+		Location: cfg.Location,
 	})
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
