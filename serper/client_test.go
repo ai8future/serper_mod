@@ -836,6 +836,68 @@ func TestSearch_NormalizesTrailingSlashBaseURL(t *testing.T) {
 	}
 }
 
+func TestShopping_Success(t *testing.T) {
+	respJSON := `{
+		"searchParameters": {"q": "laptop", "type": "shopping"},
+		"shopping": [
+			{"title": "Great Laptop", "source": "Amazon", "link": "https://example.com/laptop", "price": "$999.99", "rating": 4.5, "ratingCount": 200, "position": 1}
+		]
+	}`
+	mock := &mockDoer{statusCode: 200, respBody: respJSON}
+	c := mustNew(t, "key", WithDoer(mock), WithBaseURL("https://api.test"))
+
+	resp, err := c.Shopping(context.Background(), &SearchRequest{Q: "laptop"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Shopping) != 1 {
+		t.Fatalf("shopping: got %d, want 1", len(resp.Shopping))
+	}
+	if resp.Shopping[0].Title != "Great Laptop" {
+		t.Errorf("title: got %q, want %q", resp.Shopping[0].Title, "Great Laptop")
+	}
+	if resp.Shopping[0].Price != "$999.99" {
+		t.Errorf("price: got %q, want %q", resp.Shopping[0].Price, "$999.99")
+	}
+
+	// Verify /shopping endpoint was called.
+	wantURL := "https://api.test/shopping"
+	if mock.req.URL.String() != wantURL {
+		t.Errorf("URL: got %q, want %q", mock.req.URL.String(), wantURL)
+	}
+}
+
+func TestVideos_Success(t *testing.T) {
+	respJSON := `{
+		"searchParameters": {"q": "go tutorial", "type": "videos"},
+		"videos": [
+			{"title": "Go Tutorial", "link": "https://example.com/video", "snippet": "Learn Go.", "channel": "GoChan", "duration": "10:30", "position": 1}
+		]
+	}`
+	mock := &mockDoer{statusCode: 200, respBody: respJSON}
+	c := mustNew(t, "key", WithDoer(mock), WithBaseURL("https://api.test"))
+
+	resp, err := c.Videos(context.Background(), &SearchRequest{Q: "go tutorial"})
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(resp.Videos) != 1 {
+		t.Fatalf("videos: got %d, want 1", len(resp.Videos))
+	}
+	if resp.Videos[0].Title != "Go Tutorial" {
+		t.Errorf("title: got %q, want %q", resp.Videos[0].Title, "Go Tutorial")
+	}
+	if resp.Videos[0].Channel != "GoChan" {
+		t.Errorf("channel: got %q, want %q", resp.Videos[0].Channel, "GoChan")
+	}
+
+	// Verify /videos endpoint was called.
+	wantURL := "https://api.test/videos"
+	if mock.req.URL.String() != wantURL {
+		t.Errorf("URL: got %q, want %q", mock.req.URL.String(), wantURL)
+	}
+}
+
 func TestSearch_ResponseTooLarge(t *testing.T) {
 	largeBody := strings.Repeat("x", maxResponseBytes+20)
 	mock := &mockDoer{statusCode: 200, respBody: largeBody}

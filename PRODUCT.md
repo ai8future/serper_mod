@@ -217,12 +217,12 @@ The product is built with an acute awareness that every API call to Serper.dev c
 
 ## Maturity and Evolution
 
-The product is at version 1.8.4 and has gone through significant hardening over its lifecycle:
+The product is at version 1.8.8 and has gone through significant hardening over its lifecycle:
 
 - **v1.0.0**: Initial release with basic search functionality
 - **v1.1.0**: Input validation hardening, timeout defaults, response size limits, error truncation
 - **v1.2.0**: Constructor validation, request immutability, comprehensive test coverage (30+ offline tests)
-- **v1.4.0 through v1.8.4**: Progressive chassis-go framework upgrades (v4 through v10), keeping the module aligned with the evolving internal platform
+- **v1.4.0 through v1.8.8**: Progressive chassis-go framework upgrades (v4 through v10), keeping the module aligned with the evolving internal platform
 - **v1.7.0**: Added Shopping and Videos search verticals, expanding from 5 to 7 search types
 
 The changelog shows a pattern of continuous security and reliability improvements alongside framework version tracking, indicating this is an actively maintained infrastructure component rather than a one-off integration.

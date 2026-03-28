@@ -1,5 +1,10 @@
 # Changelog
 
+## [1.8.8] - 2026-03-27
+- test: add TestShopping_Success and TestVideos_Success for previously uncovered endpoints
+- Coverage: serper pkg 93.1% -> 95.0% (Shopping and Videos now 100%)
+- Agent: Claude:Opus 4.6
+
 ## [1.8.7] - 2026-03-27
 - test: add HTTP status code mapping tests (400, 403, 404, 429, 502)
 - test: add concurrent client usage test with stateless mock and race detector
