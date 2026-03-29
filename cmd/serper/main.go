@@ -16,11 +16,9 @@ import (
 	"github.com/ai8future/chassis-go/v10/logz"
 	"github.com/ai8future/chassis-go/v10/registry"
 
+	serpermod "github.com/ai8future/serper_mod"
 	"github.com/ai8future/serper_mod/serper"
 )
-
-// version is set at build time via -ldflags "-X main.version=..."
-var version = "dev"
 
 // Config holds CLI configuration loaded from environment.
 type Config struct {
@@ -35,6 +33,7 @@ type Config struct {
 }
 
 func main() {
+	chassis.SetAppVersion(serpermod.AppVersion)
 	chassis.RequireMajor(10)
 
 	if err := registry.InitCLI(chassis.Version); err != nil {
