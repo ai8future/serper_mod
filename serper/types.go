@@ -4,7 +4,7 @@ package serper
 import (
 	"strings"
 
-	chassiserrors "github.com/ai8future/chassis-go/v10/errors"
+	chassiserrors "github.com/ai8future/chassis-go/v11/errors"
 )
 
 // SearchRequest represents a search request to Serper.dev.
