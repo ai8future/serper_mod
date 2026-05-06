@@ -1,5 +1,9 @@
 # Changelog
 
+## [1.8.9] - 2026-05-06
+- Update Serper module Go metadata for Go 1.26.2 test compatibility.
+- Agent: Codex:gpt-5.5-high
+
 ## [1.8.8] - 2026-03-27
 - test: add TestShopping_Success and TestVideos_Success for previously uncovered endpoints
 - Coverage: serper pkg 93.1% -> 95.0% (Shopping and Videos now 100%)
