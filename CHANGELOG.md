@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.8.10] - 2026-05-11
+- Upgrade chassis-go from v11.1.8 to v11.1.13 (metadata refresh; net code impact is zero — covers docs/CI/Go-floor alignment in chassis 11.1.9–11.1.13).
+- Add `.omc/` and `.omx/` to `.gitignore` to keep local OMC/OMX runtime state out of version control (mirrors chassis 11.1.13).
+- Verified with `go mod tidy`, `go vet ./...`, `go build ./...`, and `go test ./...`.
+- Agent: Claude:Opus 4.7 (1M context)
+
 ## [1.8.9] - 2026-05-06
 - Update Serper module Go metadata for Go 1.26.2 test compatibility.
 - Agent: Codex:gpt-5.5-high

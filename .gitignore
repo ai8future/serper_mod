@@ -44,6 +44,10 @@ dist/
 # Claude
 .claude/settings.local.json
 
+# OMC / OMX runtime state
+.omc/
+.omx/
+
 # Build output
 bin/
 

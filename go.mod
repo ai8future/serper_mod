@@ -2,7 +2,7 @@ module github.com/ai8future/serper_mod
 
 go 1.26.2
 
-require github.com/ai8future/chassis-go/v11 v11.1.8
+require github.com/ai8future/chassis-go/v11 v11.1.13
 
 replace github.com/ai8future/chassis-go/v11 => ../../chassis_suite/chassis-go
 
