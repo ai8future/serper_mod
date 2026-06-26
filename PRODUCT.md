@@ -28,7 +28,7 @@ serper_mod exists to solve all of these problems once, in a single reusable modu
 
 ### Strategic Context
 
-This module lives within a broader `serp_suite` collection and depends on `chassis-go`, an internal Go framework (currently at v10). This indicates that serper_mod is part of a larger platform or product ecosystem where:
+This module lives within a broader `serp_suite` collection and depends on `chassis-go`, an internal Go framework (currently at major version v11, pinned to v11.1.13 via a local `replace` directive pointing at a sibling `../../chassis_suite/chassis-go` checkout). This indicates that serper_mod is part of a larger platform or product ecosystem where:
 
 - Multiple services or applications need search capabilities
 - There is a shared infrastructure layer (`chassis-go`) providing cross-cutting concerns like error handling, retry logic, configuration management, structured logging, and observability (OpenTelemetry)
@@ -139,13 +139,16 @@ Response bodies are capped at 10 MB via `io.LimitReader`. This prevents:
 - Denial-of-service conditions if the upstream API misbehaves
 - Runaway memory allocation in production services
 
-### Error Body Truncation
+### Error Body Truncation and Log-Injection Sanitization
 
-When the API returns an error (HTTP 4xx/5xx), the error body included in the error message is truncated to 1 KB. This prevents:
+When the API returns an error (HTTP 4xx/5xx), the error body included in the error message is first run through `sanitizeForLog` (every control character `< 0x20` and `0x7f` is replaced with a space) and then truncated to 1 KB. This prevents:
 
 - Oversized error messages flooding logs
 - Sensitive data from error responses leaking into log aggregation systems
 - Memory pressure from storing large error payloads
+- **Log-injection / log-forging attacks** -- a malicious or corrupted upstream body cannot smuggle newlines or terminal escape sequences into structured logs, which could otherwise spoof log lines or corrupt log viewers
+
+**Why this matters:** error strings frequently flow straight into structured logging and alerting pipelines; treating the upstream error body as untrusted text closes a class of log-poisoning attacks even though Serper.dev is nominally trusted.
 
 ### Typed Error Mapping
 
@@ -155,10 +158,13 @@ HTTP error codes from the Serper.dev API are mapped to semantically meaningful e
 |----------|-----------|------------|-----------|------------------|
 | Bad request | 400 | `ValidationError` | `INVALID_ARGUMENT` | The search request was malformed |
 | Invalid API key | 401 | `UnauthorizedError` | `UNAUTHENTICATED` | The API key is wrong or expired -- billing/account issue |
+| Forbidden | 403 | `ForbiddenError` | `PERMISSION_DENIED` | The key is valid but lacks permission for this action (e.g. plan does not allow the endpoint) |
 | Endpoint not found | 404 | `NotFoundError` | `NOT_FOUND` | Requested a non-existent search vertical |
 | Rate limited | 429 | `RateLimitError` | `RESOURCE_EXHAUSTED` | Usage quota exceeded -- need to slow down or upgrade the Serper.dev plan |
 | Upstream down | 502/503 | `DependencyError` | `UNAVAILABLE` | Serper.dev or Google is having issues -- retry may help |
 | Other failures | any other | `InternalError` | `INTERNAL` | Unexpected failure |
+
+Note the ordering: the HTTP status check runs *before* the JSON security validation, so error responses are mapped by status code and never passed through `secval.ValidateJSON` (which only guards successful 2xx response bodies prior to unmarshalling).
 
 The dual HTTP/gRPC code design suggests this module is used in systems that may expose search results through both REST and gRPC APIs, or that use gRPC status codes as an internal error taxonomy.
 
@@ -172,16 +178,16 @@ This is critical for production reliability -- transient network failures, 502/5
 
 ## CLI Product Behavior
 
-The CLI binary provides a focused, single-purpose interface:
+The CLI binary (note: it only exposes the **web `Search()` vertical**; the other six verticals are library-only) provides a focused, single-purpose interface:
 
-1. **Input**: All command-line arguments are joined into a single search query (e.g., `serper golang concurrency patterns`)
+1. **Input**: All command-line arguments are joined into a single search query (e.g., `serper golang concurrency patterns`); with no arguments it prints `usage: serper <query>` to stderr and exits 1
 2. **Output**: Pretty-printed JSON written to stdout
-3. **Configuration**: Entirely through environment variables (no config files, no flags) -- suitable for containerized deployments, CI/CD pipelines, and shell scripts
+3. **Configuration**: Entirely through environment variables (no config files, no flags) -- suitable for containerized deployments, CI/CD pipelines, and shell scripts. Recognized vars: `SERPER_API_KEY` (required), `SERPER_BASE_URL`, `SERPER_NUM`, `SERPER_GL`, `SERPER_HL`, `SERPER_LOCATION` (geo-targeting, optional), `SERPER_TIMEOUT`, and `LOG_LEVEL`. A missing `SERPER_API_KEY` causes a hard startup failure via `chassisconfig.MustLoad`.
 4. **Error handling**: Errors go to stderr with non-zero exit codes
-5. **Resilience**: Uses chassis-go's `call.Client` with 3 retries and 500ms exponential backoff per attempt, with configurable per-attempt timeouts
+5. **Resilience**: Uses chassis-go's `call.Client` with 3 retries and 500ms initial backoff per attempt, with configurable per-attempt timeouts. Because `call.Client` enforces per-attempt timeouts and retries internally, the CLI deliberately passes `context.Background()` rather than wrapping its own context timeout.
 6. **Observability**: Structured JSON logging via `logz`, with configurable log levels, and OpenTelemetry tracing support via the call client
-7. **Version gating**: Verifies at startup that the chassis-go major version matches expectations, preventing silent ABI breakage when dependencies are upgraded
-8. **Registry integration**: Registers itself as a CLI tool with the chassis framework's registry system at startup and performs a clean shutdown
+7. **Version gating**: Calls `chassis.SetAppVersion(serpermod.AppVersion)` then `chassis.RequireMajor(11)` at startup, verifying the chassis-go major version matches expectations and preventing silent ABI breakage when dependencies are upgraded
+8. **Registry integration**: Registers itself as a CLI tool with the chassis framework's registry system at startup (`registry.InitCLI`) and performs a clean shutdown (`registry.ShutdownCLI(0)`) on success
 
 ---
 
@@ -217,12 +223,15 @@ The product is built with an acute awareness that every API call to Serper.dev c
 
 ## Maturity and Evolution
 
-The product is at version 1.8.8 and has gone through significant hardening over its lifecycle:
+The product is at version 1.8.10 (see `VERSION`) and has gone through significant hardening over its lifecycle:
 
 - **v1.0.0**: Initial release with basic search functionality
 - **v1.1.0**: Input validation hardening, timeout defaults, response size limits, error truncation
 - **v1.2.0**: Constructor validation, request immutability, comprehensive test coverage (30+ offline tests)
-- **v1.4.0 through v1.8.8**: Progressive chassis-go framework upgrades (v4 through v10), keeping the module aligned with the evolving internal platform
+- **v1.4.0 through v1.8.4**: Progressive chassis-go framework upgrades (v4 through v10), keeping the module aligned with the evolving internal platform
 - **v1.7.0**: Added Shopping and Videos search verticals, expanding from 5 to 7 search types
+- **v1.8.6**: Major hardening pass -- nil request/doer guards, trailing-slash URL normalization, 403→`ForbiddenError` mapping, response-overflow detection, whitespace-query rejection, error-body log-injection sanitization, the generic `doSearch[T]` helper that collapsed seven duplicated endpoint methods, and the `SERPER_LOCATION` CLI env var
+- **v1.8.7 / v1.8.8**: Test-coverage expansion (HTTP status mapping, concurrency/race tests, Shopping and Videos endpoint tests) raising serper-package coverage to ~95%
+- **v1.8.9 / v1.8.10**: Go 1.26.2 metadata alignment and chassis-go upgrade to v11 (currently v11.1.13, `RequireMajor(11)`)
 
 The changelog shows a pattern of continuous security and reliability improvements alongside framework version tracking, indicating this is an actively maintained infrastructure component rather than a one-off integration.
