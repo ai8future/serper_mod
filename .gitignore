@@ -44,12 +44,15 @@ dist/
 # Claude
 .claude/settings.local.json
 
-# OMC / OMX runtime state
-.omc/
-.omx/
 
 # Build output
 bin/
 
 # Project-specific
 /cmd/serper/serper
+
+# Agent state (OMC/OMX) -- operational artifacts, not source.
+# Use the .omc/* form (not .omc/) so the skills negation can take effect.
+.omc/*
+!.omc/skills/
+.omx/
